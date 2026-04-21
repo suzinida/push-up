@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Push-up Rep Checker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a1520;
+    --surface: #11203a;
+    --border: #1f3a66;
+    --accent: #00d4ff;
+    --accent2: #ff4d8d;
+    --text: #eaf3ff;
+    --muted: #6b84a8;
+    --good: #00e676;
+    --warn: #ff9d00;
+    --bad: #ff1744;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Do Hyeon', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .page { display: none; min-height: 100vh; flex-direction: column; }
+  .page.active { display: flex; }
+
+  .landing-header {
+    padding: 24px 40px;
+    display: flex; align-items: baseline; gap: 16px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .logo { font-size: 28px; letter-spacing: 0.06em; color: var(--accent); }
+  .subtitle { font-size: 14px; color: var(--muted); }
+
+  .landing-hero {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; padding: 48px 24px; text-align: center; gap: 24px;
+  }
+
+  .hero-tag {
+    font-size: 13px; letter-spacing: 0.12em; color: var(--accent);
+    border: 0.5px solid var(--accent); padding: 4px 14px; border-radius: 2px;
+  }
+
+  .hero-title {
+    font-size: clamp(52px, 11vw, 104px);
+    line-height: 0.98; letter-spacing: 0.03em;
+  }
+
+  .hero-title span { color: var(--accent); }
+
+  .hero-tagline {
+    font-size: 18px; color: var(--accent);
+    border: 0.5px solid var(--border); background: var(--surface);
+    padding: 10px 24px; border-radius: 4px; width: 100%; max-width: 680px;
+  }
+
+  .criteria-card {
+    width: 100%; max-width: 680px;
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 8px; padding: 24px; text-align: left;
+  }
+
+  .criteria-title { font-size: 36px; color: var(--accent); margin-bottom: 20px; text-align: center; }
+
+  .criteria-rules { display: flex; flex-direction: column; gap: 16px; }
+  .criteria-rule { display: flex; align-items: flex-start; gap: 16px; }
+
+  .rule-badge {
+    font-size: 16px; padding: 5px 14px; border-radius: 3px;
+    white-space: nowrap; flex-shrink: 0; margin-top: 2px;
+  }
+
+  .rule-badge.rep   { background: var(--good); color: #001a08; }
+  .rule-badge.norep { background: var(--bad);  color: #fff; }
+  .rule-badge.down  { background: var(--accent2); color: #fff; }
+  .rule-badge.up    { background: var(--accent); color: #00111a; }
+
+  .rule-text { font-size: 15px; color: var(--muted); line-height: 1.8; }
+  .rule-text strong { color: var(--text); font-weight: 400; }
+
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; width: 100%; max-width: 680px;
+  }
+
+  .feature-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 4px; padding: 20px 16px; text-align: left;
+  }
+
+  .feature-num { font-size: 36px; color: var(--accent); line-height: 1; margin-bottom: 8px; }
+  .feature-title { font-size: 17px; color: var(--text); margin-bottom: 8px; }
+  .feature-desc { font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+  .how-section {
+    width: 100%; max-width: 680px;
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 4px; padding: 24px; text-align: left;
+  }
+
+  .how-title { font-size: 36px; color: var(--accent); margin-bottom: 20px; }
+
+  .how-step {
+    display: flex; gap: 14px;
+    font-size: 15px; color: var(--muted); line-height: 1.8; margin-bottom: 14px;
+  }
+
+  .how-step:last-child { margin-bottom: 0; }
+  .how-num { font-size: 24px; color: var(--accent); line-height: 1.2; min-width: 18px; }
+
+  .btn-start {
+    width: 100%; max-width: 680px; padding: 20px;
+    background: var(--accent); border: none; border-radius: 4px;
+    color: #00111a;
+    font-family: 'Do Hyeon', sans-serif;
+    font-size: 24px; letter-spacing: 0.06em;
+    cursor: pointer; transition: background 0.15s, transform 0.1s;
+  }
+
+  .btn-start:hover { background: #55e5ff; transform: scale(1.01); }
+  .btn-start:active { transform: scale(0.99); }
+
+  .cam-header {
+    padding: 16px 24px; display: flex;
+    align-items: center; justify-content: space-between;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .back-btn {
+    background: transparent; border: 0.5px solid var(--border);
+    border-radius: 4px; color: var(--muted);
+    font-family: 'Do Hyeon', sans-serif;
+    font-size: 14px; padding: 6px 14px; cursor: pointer; transition: all 0.15s;
+  }
+
+  .back-btn:hover { border-color: var(--text); color: var(--text); }
+
+  .cam-main {
+    width: 100%; max-width: 960px; margin: 0 auto;
+    padding: 20px 16px; display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .camera-section {
+    position: relative; width: 100%; aspect-ratio: 4/3;
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 4px; overflow: hidden;
+  }
+
+  #videoEl { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+  #canvasEl { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .rep-flash {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 5;
+  }
+
+  .rep-flash.show { opacity: 1; }
+
+  .rep-flash-text {
+    font-family: 'Do Hyeon', sans-serif;
+    font-size: 80px; letter-spacing: 0.04em;
+    text-shadow: 0 0 30px rgba(0,0,0,0.5);
+  }
+
+  .overlay-status {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(10,21,32,0.82); backdrop-filter: blur(6px);
+    border: 0.5px solid var(--border); border-radius: 2px;
+    padding: 8px 20px; font-size: 15px; color: var(--muted);
+    white-space: nowrap; transition: all 0.2s; z-index: 4;
+  }
+
+  .overlay-status.good { color: var(--good); border-color: var(--good); }
+  .overlay-status.warn { color: var(--warn); border-color: var(--warn); }
+  .overlay-status.down { color: var(--accent2); border-color: var(--accent2); }
+  .overlay-status.up   { color: var(--accent); border-color: var(--accent); }
+
+  .feedback-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 14px 20px;
+    background: linear-gradient(transparent, rgba(10,21,32,0.9));
+    display: flex; align-items: center; justify-content: space-between; z-index: 4;
+  }
+
+  .feedback-text { font-size: 40px; letter-spacing: 0.04em; transition: color 0.2s; }
+
+  .angle-display { font-size: 14px; color: var(--muted); text-align: right; line-height: 1.7; }
+  .angle-display span { color: var(--text); }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stat-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 4px; padding: 14px 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .stat-label { font-size: 16px; color: var(--muted); letter-spacing: 0.04em; }
+
+  .stat-value {
+    font-size: 56px; line-height: 1; color: var(--accent); transition: color 0.3s;
+  }
+
+  .stat-value.small { font-size: 36px; }
+
+  .stat-value.flash { animation: flash 0.4s ease; }
+
+  @keyframes flash {
+    0%   { color: var(--good); transform: scale(1.15); }
+    100% { color: var(--accent); transform: scale(1); }
+  }
+
+  .stat-sub { font-size: 11px; color: var(--muted); }
+
+  .btn {
+    width: 100%; padding: 18px 20px; background: transparent;
+    border: 0.5px solid var(--border); border-radius: 4px;
+    color: var(--muted);
+    font-family: 'Do Hyeon', sans-serif;
+    font-size: 22px; letter-spacing: 0.06em;
+    cursor: pointer; transition: all 0.15s;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .loading-overlay {
+    position: absolute; inset: 0; background: var(--surface);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px; z-index: 10;
+  }
+
+  .loading-text { font-size: 15px; color: var(--muted); }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 1.5px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .side-indicator {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(10,21,32,0.82); border: 0.5px solid var(--border);
+    border-radius: 2px; padding: 6px 14px; font-size: 13px; color: var(--muted); z-index: 4;
+  }
+
+  .depth-bar-wrap {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 4;
+  }
+
+  .depth-bar-track {
+    width: 6px; height: 140px; background: var(--border);
+    border-radius: 3px; overflow: hidden; position: relative;
+  }
+
+  .depth-bar-fill {
+    width: 100%; background: var(--accent);
+    transition: height 0.1s, background 0.2s;
+    border-radius: 3px;
+    position: absolute; bottom: 0; left: 0;
+  }
+
+  .depth-bar-label { font-size: 10px; color: var(--muted); writing-mode: vertical-lr; transform: rotate(180deg); }
+
+  .phase-pill {
+    display: inline-block;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 20px; letter-spacing: 0.08em;
+    border: 0.5px solid var(--border);
+    color: var(--muted);
+  }
+  .phase-pill.up   { color: var(--accent);  border-color: var(--accent); }
+  .phase-pill.down { color: var(--accent2); border-color: var(--accent2); }
+
+  @media (max-width: 400px) {
+    .stat-value { font-size: 44px; }
+    .stat-value.small { font-size: 28px; }
+    .stat-label { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ LANDING PAGE ══ -->
+<div class="page active" id="landingPage">
+  <header class="landing-header">
+    <div class="logo">Push-up Rep Checker</div>
+    <div class="subtitle">Yuga Middle School</div>
+  </header>
+
+  <div class="landing-hero">
+    <div class="hero-tag">AI 자세 분석</div>
+    <div class="hero-title">PUSH-UP<br><span>REP</span><br>CHECKER</div>
+    <div class="hero-tagline">배·무릎 → 팔꿈치 쭉! 두 동작이 맞아야 REP!</div>
+
+    <div class="criteria-card">
+      <div class="criteria-title">판정 기준</div>
+      <div class="criteria-rules">
+        <div class="criteria-rule">
+          <div class="rule-badge down">DOWN</div>
+          <div class="rule-text">
+            <strong>배 + 무릎이 바닥에 완전히 닿은</strong> 경우<br>
+            → 내려가기 단계 완료
+          </div>
+        </div>
+        <div class="criteria-rule">
+          <div class="rule-badge up">UP</div>
+          <div class="rule-text">
+            <strong>팔꿈치가 완전히 펴지고 무릎이 바닥에서 떨어진</strong> 경우<br>
+            → 올라가기 단계 완료
+          </div>
+        </div>
+        <div class="criteria-rule">
+          <div class="rule-badge rep">REP</div>
+          <div class="rule-text">
+            <strong>DOWN → UP</strong> 두 동작이 차례대로 수행된 경우<br>
+            → 팔굽혀펴기 1회 인정
+          </div>
+        </div>
+        <div class="criteria-rule">
+          <div class="rule-badge norep">NO REP</div>
+          <div class="rule-text">
+            배·무릎이 바닥에 닿지 않거나, 팔꿈치가 다 펴지지 않은 경우<br>
+            → 다시 정확하게 동작하세요
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-num">01</div>
+        <div class="feature-title">5개 관절 인식</div>
+        <div class="feature-desc">어깨·팔꿈치·손·배·무릎을 실시간으로 추적해요</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">02</div>
+        <div class="feature-title">2단계 판정</div>
+        <div class="feature-desc">DOWN과 UP이 모두 확인돼야 카운트 해요</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">03</div>
+        <div class="feature-title">설치 불필요</div>
+        <div class="feature-desc">앱 없이 브라우저만 있으면 바로 사용 가능해요</div>
+      </div>
+    </div>
+
+    <div class="how-section">
+      <div class="how-title">사용 방법</div>
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <div>카메라 시작 버튼을 누르고 카메라 권한을 허용해주세요</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <div>옆모습이 보이도록 카메라를 옆에 두고 팔굽혀펴기 자세를 취해주세요 <span style="color:var(--accent)">(측면 90°가 가장 정확해요)</span></div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <div>내려갈 때 <span style="color:var(--accent2)">배와 무릎이 동시에 바닥</span>에 닿아야 해요</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">4</div>
+        <div>올라올 때 <span style="color:var(--accent)">팔꿈치를 완전히 펴고 무릎은 바닥에서 떨어져야</span> REP으로 인정돼요</div>
+      </div>
+    </div>
+
+    <button class="btn-start" onclick="goToCamera()">카메라 시작하기 →</button>
+  </div>
+</div>
+
+<!-- ══ CAMERA PAGE ══ -->
+<div class="page" id="cameraPage">
+  <div class="cam-header">
+    <div class="logo" style="font-size:22px">Push-up Rep Checker</div>
+    <button class="back-btn" onclick="goToLanding()">← 뒤로</button>
+  </div>
+
+  <div class="cam-main">
+    <div class="camera-section">
+      <video id="videoEl" playsinline></video>
+      <canvas id="canvasEl"></canvas>
+
+      <div class="rep-flash" id="repFlash">
+        <div class="rep-flash-text" id="repFlashText">REP</div>
+      </div>
+
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">AI 모델 로딩 중...</div>
+      </div>
+
+      <div class="overlay-status" id="statusLabel">카메라 시작 중...</div>
+      <div class="side-indicator" id="sideLabel">감지 대기 중</div>
+
+      <div class="depth-bar-wrap">
+        <div class="depth-bar-label">DEPTH</div>
+        <div class="depth-bar-track">
+          <div class="depth-bar-fill" id="depthBar" style="height:0%"></div>
+        </div>
+      </div>
+
+      <div class="feedback-bar">
+        <div class="feedback-text" id="feedbackText" style="color:var(--muted)">준비</div>
+        <div class="angle-display">
+          팔꿈치 <span id="elbowAngle">—</span>°<br>
+          배 <span id="bellyState">—</span> · 무릎 <span id="kneeState">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">총 횟수</div>
+        <div class="stat-value" id="totalCount">0</div>
+        <div class="stat-sub">DOWN → UP 완료</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">현재 단계</div>
+        <div class="stat-value small" id="phaseValue">
+          <span class="phase-pill" id="phasePill">READY</span>
+        </div>
+        <div class="stat-sub">DOWN / UP</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">팔꿈치 각도</div>
+        <div class="stat-value small" id="elbowStat" style="color:var(--accent2)">—</div>
+        <div class="stat-sub">펴짐 목표 160°↑</div>
+      </div>
+    </div>
+
+    <button class="btn" onclick="resetStats()">횟수 초기화</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+
+<script>
+const videoEl      = document.getElementById('videoEl');
+const canvasEl     = document.getElementById('canvasEl');
+const ctx          = canvasEl.getContext('2d');
+const loadingEl    = document.getElementById('loadingOverlay');
+const statusEl     = document.getElementById('statusLabel');
+const sideEl       = document.getElementById('sideLabel');
+const feedbackEl   = document.getElementById('feedbackText');
+const elbowAngleEl = document.getElementById('elbowAngle');
+const bellyStateEl = document.getElementById('bellyState');
+const kneeStateEl  = document.getElementById('kneeState');
+const totalCountEl = document.getElementById('totalCount');
+const phasePillEl  = document.getElementById('phasePill');
+const elbowStatEl  = document.getElementById('elbowStat');
+const depthBarEl   = document.getElementById('depthBar');
+const repFlashEl   = document.getElementById('repFlash');
+const repFlashText = document.getElementById('repFlashText');
+
+// ═════ Tunable thresholds ═════
+const BELLY_ON_FLOOR  = 0.055; // |wristY - hipY| 기준
+const KNEE_ON_FLOOR   = 0.050; // |wristY - kneeY| 기준
+const KNEE_OFF_FLOOR  = 0.080; // 무릎이 바닥에서 떨어짐 판정
+const ELBOW_EXTENDED  = 160;   // 팔꿈치 펴짐
+const ELBOW_BENT      = 110;   // 팔꿈치 굽혀짐 (참고용)
+
+let totalCount = 0;
+let phase = 'ready';   // 'ready' | 'down' | 'up'
+let cameraStarted = false;
+let flashTimeout = null;
+
+function goToCamera() {
+  document.getElementById('landingPage').classList.remove('active');
+  document.getElementById('cameraPage').classList.add('active');
+  if (!cameraStarted) startCamera();
+}
+
+function goToLanding() {
+  document.getElementById('cameraPage').classList.remove('active');
+  document.getElementById('landingPage').classList.add('active');
+}
+
+function calcAngle(a, b, c) {
+  const ab = { x: a.x - b.x, y: a.y - b.y };
+  const cb = { x: c.x - b.x, y: c.y - b.y };
+  const dot = ab.x * cb.x + ab.y * cb.y;
+  const mag = Math.sqrt(ab.x**2 + ab.y**2) * Math.sqrt(cb.x**2 + cb.y**2);
+  if (mag === 0) return 180;
+  return Math.acos(Math.max(-1, Math.min(1, dot / mag))) * (180 / Math.PI);
+}
+
+function flashEl(el) {
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+
+function showFlash(type) {
+  if (flashTimeout) clearTimeout(flashTimeout);
+  if (type === 'rep') {
+    repFlashEl.style.background = 'rgba(0,230,118,0.25)';
+    repFlashText.textContent = 'REP';
+    repFlashText.style.color = '#00e676';
+  } else {
+    repFlashEl.style.background = 'rgba(255,23,68,0.25)';
+    repFlashText.textContent = 'NO REP';
+    repFlashText.style.color = '#ff1744';
+  }
+  repFlashEl.classList.add('show');
+  flashTimeout = setTimeout(() => repFlashEl.classList.remove('show'), 800);
+}
+
+function resetStats() {
+  totalCount = 0;
+  phase = 'ready';
+  totalCountEl.textContent = '0';
+  setPhase('ready');
+}
+
+function setPhase(p) {
+  phase = p;
+  phasePillEl.classList.remove('up', 'down');
+  if (p === 'up')   { phasePillEl.classList.add('up');   phasePillEl.textContent = 'UP';   }
+  else if (p === 'down') { phasePillEl.classList.add('down'); phasePillEl.textContent = 'DOWN'; }
+  else { phasePillEl.textContent = 'READY'; }
+}
+
+// 푸시업 자세 판별: 손이 바닥에 있고, 몸이 가로로 뻗어있음
+function isPushupPose(lm) {
+  const wristY = Math.max(lm[15].y, lm[16].y);
+  if (wristY < 0.45) return false; // 손이 화면 아래쪽에 있어야 함
+  const avgShY = (lm[11].y + lm[12].y) / 2;
+  if (avgShY >= wristY - 0.03) return false; // 어깨는 손목보다 위에
+  // 가로로 뻗은 몸통
+  const avgShX = (lm[11].x + lm[12].x) / 2;
+  const avgAnkleX = (lm[27].x + lm[28].x) / 2;
+  if (Math.abs(avgShX - avgAnkleX) < 0.18) return false;
+  return true;
+}
+
+// 보이는 쪽 선택 (visibility 평균이 높은 쪽)
+function pickSide(lm) {
+  const L = (lm[11].visibility + lm[13].visibility + lm[15].visibility + lm[23].visibility + lm[25].visibility) / 5;
+  const R = (lm[12].visibility + lm[14].visibility + lm[16].visibility + lm[24].visibility + lm[26].visibility) / 5;
+  return L >= R ? 'L' : 'R';
+}
+
+const pose = new Pose({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}` });
+pose.setOptions({
+  modelComplexity: 1, smoothLandmarks: true, enableSegmentation: false,
+  minDetectionConfidence: 0.6, minTrackingConfidence: 0.6
+});
+
+pose.onResults((results) => {
+  canvasEl.width  = videoEl.videoWidth  || 640;
+  canvasEl.height = videoEl.videoHeight || 480;
+  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  ctx.drawImage(results.image, 0, 0, canvasEl.width, canvasEl.height);
+
+  if (!results.poseLandmarks) {
+    statusEl.textContent = '사람을 찾는 중...';
+    statusEl.className = 'overlay-status';
+    feedbackEl.textContent = '준비';
+    feedbackEl.style.color = 'var(--muted)';
+    depthBarEl.style.height = '0%';
+    return;
+  }
+
+  const lm = results.poseLandmarks;
+  drawConnectors(ctx, lm, POSE_CONNECTIONS, { color: '#1f3a66', lineWidth: 1.5 });
+  drawLandmarks(ctx, lm, { color: '#00d4ff', lineWidth: 1, radius: 3 });
+
+  if (!isPushupPose(lm)) {
+    statusEl.textContent = '팔굽혀펴기 자세를 취해주세요';
+    statusEl.className = 'overlay-status';
+    feedbackEl.textContent = '준비';
+    feedbackEl.style.color = 'var(--muted)';
+    sideEl.textContent = '자세 감지 중';
+    depthBarEl.style.height = '0%';
+    elbowAngleEl.textContent = '—';
+    elbowStatEl.textContent = '—';
+    bellyStateEl.textContent = '—';
+    kneeStateEl.textContent = '—';
+    setPhase('ready');
+    return;
+  }
+
+  // 우세한 쪽(측면) 선택
+  const side = pickSide(lm);
+  const sh = side === 'L' ? lm[11] : lm[12];
+  const el = side === 'L' ? lm[13] : lm[14];
+  const wr = side === 'L' ? lm[15] : lm[16];
+  const hp = side === 'L' ? lm[23] : lm[24];
+  const kn = side === 'L' ? lm[25] : lm[26];
+  sideEl.textContent = (side === 'L' ? '왼쪽' : '오른쪽') + ' 측면 인식';
+
+  // 바닥 기준 = 손목 y (좀 더 안정적으로 양쪽 손목 최댓값)
+  const floorY = Math.max(lm[15].y, lm[16].y);
+
+  // 팔꿈치 각도 (어깨-팔꿈치-손목)
+  const elbowAng = Math.round(calcAngle(sh, el, wr));
+  elbowAngleEl.textContent = elbowAng;
+  elbowStatEl.textContent = elbowAng;
+
+  // 배(엉덩이) & 무릎 바닥과의 간격
+  const bellyGap = floorY - hp.y;  // 양수 = 배가 바닥보다 위 (뜬 상태)
+  const kneeGap  = floorY - kn.y;  // 양수 = 무릎이 바닥보다 위 (뜬 상태)
+
+  const bellyOnFloor = Math.abs(bellyGap) < BELLY_ON_FLOOR;
+  const kneeOnFloor  = Math.abs(kneeGap)  < KNEE_ON_FLOOR;
+  const kneeOffFloor = kneeGap > KNEE_OFF_FLOOR;
+  const elbowExt     = elbowAng >= ELBOW_EXTENDED;
+
+  bellyStateEl.textContent = bellyOnFloor ? '닿음' : '뜸';
+  kneeStateEl.textContent  = kneeOnFloor  ? '닿음' : (kneeOffFloor ? '뜸' : '중간');
+
+  // DEPTH 표시 — DOWN에 가까울수록(배가 바닥에 가까울수록) 가득 참
+  const depthPct = Math.round(Math.max(0, Math.min(100, (1 - Math.min(0.15, Math.abs(bellyGap)) / 0.15) * 100)));
+  depthBarEl.style.height = depthPct + '%';
+
+  // 단계 판정
+  const isDown = bellyOnFloor && kneeOnFloor;
+  const isUp   = elbowExt && kneeOffFloor;
+
+  // 색상 / 피드백
+  if (isDown) {
+    depthBarEl.style.background = 'var(--accent2)';
+    feedbackEl.textContent = 'DOWN!';
+    feedbackEl.style.color = 'var(--accent2)';
+    statusEl.textContent = '배와 무릎이 바닥에 닿았어요!';
+    statusEl.className = 'overlay-status down';
+  } else if (isUp) {
+    depthBarEl.style.background = 'var(--accent)';
+    feedbackEl.textContent = 'UP!';
+    feedbackEl.style.color = 'var(--accent)';
+    statusEl.textContent = '팔을 쭉 펴고 무릎이 떴어요!';
+    statusEl.className = 'overlay-status up';
+  } else if (depthPct > 60) {
+    depthBarEl.style.background = 'var(--warn)';
+    feedbackEl.textContent = 'GO DOWN';
+    feedbackEl.style.color = 'var(--warn)';
+    statusEl.textContent = '조금만 더 내려가세요';
+    statusEl.className = 'overlay-status warn';
+  } else {
+    depthBarEl.style.background = 'var(--border)';
+    feedbackEl.textContent = 'PUSH-UP';
+    feedbackEl.style.color = 'var(--text)';
+    statusEl.textContent = '팔굽혀펴기 자세 인식됨';
+    statusEl.className = 'overlay-status';
+  }
+
+  // ═════ State machine ═════
+  // 시퀀스: UP → DOWN → UP = 1 REP
+  // ready 상태일 땐 어느 쪽이든 먼저 감지되면 그쪽으로 진입
+  if (phase === 'ready') {
+    if (isUp) setPhase('up');
+    else if (isDown) setPhase('down');
+  } else if (phase === 'up') {
+    if (isDown) setPhase('down');
+  } else if (phase === 'down') {
+    if (isUp) {
+      setPhase('up');
+      totalCount++;
+      totalCountEl.textContent = totalCount;
+      flashEl(totalCountEl);
+      showFlash('rep');
+    }
+  }
+
+  // 관절 그리기 (어깨·팔꿈치·손·배(엉덩이)·무릎)
+  const drawPoint = (p, color, label) => {
+    const x = p.x * canvasEl.width;
+    const y = p.y * canvasEl.height;
+    ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2);
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = '13px Do Hyeon, sans-serif';
+    if (label) ctx.fillText(label, x + 12, y - 6);
+  };
+
+  drawPoint(sh, '#00d4ff', '어깨');
+  drawPoint(el, elbowExt ? '#00e676' : '#ff9d00', '팔꿈치 ' + elbowAng + '°');
+  drawPoint(wr, '#eaf3ff', '손');
+  drawPoint(hp, bellyOnFloor ? '#00e676' : '#ff4d8d', bellyOnFloor ? '배 TOUCH' : '배');
+  drawPoint(kn, kneeOnFloor ? '#00e676' : (kneeOffFloor ? '#00d4ff' : '#ff9d00'),
+            kneeOnFloor ? '무릎 TOUCH' : (kneeOffFloor ? '무릎 OFF' : '무릎'));
+
+  // 바닥 라인 (손목 y 기준) 시각화
+  const fy = floorY * canvasEl.height;
+  ctx.strokeStyle = 'rgba(0,212,255,0.35)';
+  ctx.setLineDash([6, 6]); ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(canvasEl.width, fy); ctx.stroke();
+  ctx.setLineDash([]);
+});
+
+async function startCamera() {
+  cameraStarted = true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { exact: 'environment' } }
+    }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
+    videoEl.srcObject = stream; videoEl.play();
+    const camera = new Camera(videoEl, {
+      onFrame: async () => { await pose.send({ image: videoEl }); },
+      width: 640, height: 480
+    });
+    camera.start();
+    loadingEl.style.display = 'none';
+  } catch (e) {
+    loadingEl.innerHTML = '<div style="color:#ff1744;font-size:15px;text-align:center;padding:20px;font-family:Do Hyeon,sans-serif">카메라 권한이 필요해요<br><small style="color:#6b84a8;font-size:13px">브라우저 설정에서 카메라를 허용해주세요</small></div>';
+    cameraStarted = false;
+  }
+}
+</script>
+</body>
+</html>
