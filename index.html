@@ -218,7 +218,6 @@
   }
 
   .stat-value.small { font-size: 36px; }
-
   .stat-value.flash { animation: flash 0.4s ease; }
 
   @keyframes flash {
@@ -299,7 +298,6 @@
 </head>
 <body>
 
-<!-- ══ LANDING PAGE ══ -->
 <div class="page active" id="landingPage">
   <header class="landing-header">
     <div class="logo">Push-up Rep Checker</div>
@@ -387,7 +385,6 @@
   </div>
 </div>
 
-<!-- ══ CAMERA PAGE ══ -->
 <div class="page" id="cameraPage">
   <div class="cam-header">
     <div class="logo" style="font-size:22px">Push-up Rep Checker</div>
@@ -473,15 +470,14 @@ const depthBarEl   = document.getElementById('depthBar');
 const repFlashEl   = document.getElementById('repFlash');
 const repFlashText = document.getElementById('repFlashText');
 
-// ═════ Tunable thresholds ═════
-const BELLY_ON_FLOOR  = 0.055; // |wristY - hipY| 기준
-const KNEE_ON_FLOOR   = 0.050; // |wristY - kneeY| 기준
-const KNEE_OFF_FLOOR  = 0.080; // 무릎이 바닥에서 떨어짐 판정
-const ELBOW_EXTENDED  = 160;   // 팔꿈치 펴짐
-const ELBOW_BENT      = 110;   // 팔꿈치 굽혀짐 (참고용)
+const BELLY_ON_FLOOR  = 0.055;
+const KNEE_ON_FLOOR   = 0.050;
+const KNEE_OFF_FLOOR  = 0.080;
+const ELBOW_EXTENDED  = 160;
+const ELBOW_BENT      = 110;
 
 let totalCount = 0;
-let phase = 'ready';   // 'ready' | 'down' | 'up'
+let phase = 'ready';
 let cameraStarted = false;
 let flashTimeout = null;
 
@@ -539,20 +535,17 @@ function setPhase(p) {
   else { phasePillEl.textContent = 'READY'; }
 }
 
-// 푸시업 자세 판별: 손이 바닥에 있고, 몸이 가로로 뻗어있음
 function isPushupPose(lm) {
   const wristY = Math.max(lm[15].y, lm[16].y);
-  if (wristY < 0.45) return false; // 손이 화면 아래쪽에 있어야 함
+  if (wristY < 0.45) return false;
   const avgShY = (lm[11].y + lm[12].y) / 2;
-  if (avgShY >= wristY - 0.03) return false; // 어깨는 손목보다 위에
-  // 가로로 뻗은 몸통
+  if (avgShY >= wristY - 0.03) return false;
   const avgShX = (lm[11].x + lm[12].x) / 2;
   const avgAnkleX = (lm[27].x + lm[28].x) / 2;
   if (Math.abs(avgShX - avgAnkleX) < 0.18) return false;
   return true;
 }
 
-// 보이는 쪽 선택 (visibility 평균이 높은 쪽)
 function pickSide(lm) {
   const L = (lm[11].visibility + lm[13].visibility + lm[15].visibility + lm[23].visibility + lm[25].visibility) / 5;
   const R = (lm[12].visibility + lm[14].visibility + lm[16].visibility + lm[24].visibility + lm[26].visibility) / 5;
@@ -599,7 +592,6 @@ pose.onResults((results) => {
     return;
   }
 
-  // 우세한 쪽(측면) 선택
   const side = pickSide(lm);
   const sh = side === 'L' ? lm[11] : lm[12];
   const el = side === 'L' ? lm[13] : lm[14];
@@ -608,17 +600,14 @@ pose.onResults((results) => {
   const kn = side === 'L' ? lm[25] : lm[26];
   sideEl.textContent = (side === 'L' ? '왼쪽' : '오른쪽') + ' 측면 인식';
 
-  // 바닥 기준 = 손목 y (좀 더 안정적으로 양쪽 손목 최댓값)
   const floorY = Math.max(lm[15].y, lm[16].y);
 
-  // 팔꿈치 각도 (어깨-팔꿈치-손목)
   const elbowAng = Math.round(calcAngle(sh, el, wr));
   elbowAngleEl.textContent = elbowAng;
   elbowStatEl.textContent = elbowAng;
 
-  // 배(엉덩이) & 무릎 바닥과의 간격
-  const bellyGap = floorY - hp.y;  // 양수 = 배가 바닥보다 위 (뜬 상태)
-  const kneeGap  = floorY - kn.y;  // 양수 = 무릎이 바닥보다 위 (뜬 상태)
+  const bellyGap = floorY - hp.y;
+  const kneeGap  = floorY - kn.y;
 
   const bellyOnFloor = Math.abs(bellyGap) < BELLY_ON_FLOOR;
   const kneeOnFloor  = Math.abs(kneeGap)  < KNEE_ON_FLOOR;
@@ -628,15 +617,12 @@ pose.onResults((results) => {
   bellyStateEl.textContent = bellyOnFloor ? '닿음' : '뜸';
   kneeStateEl.textContent  = kneeOnFloor  ? '닿음' : (kneeOffFloor ? '뜸' : '중간');
 
-  // DEPTH 표시 — DOWN에 가까울수록(배가 바닥에 가까울수록) 가득 참
   const depthPct = Math.round(Math.max(0, Math.min(100, (1 - Math.min(0.15, Math.abs(bellyGap)) / 0.15) * 100)));
   depthBarEl.style.height = depthPct + '%';
 
-  // 단계 판정
   const isDown = bellyOnFloor && kneeOnFloor;
   const isUp   = elbowExt && kneeOffFloor;
 
-  // 색상 / 피드백
   if (isDown) {
     depthBarEl.style.background = 'var(--accent2)';
     feedbackEl.textContent = 'DOWN!';
@@ -663,9 +649,6 @@ pose.onResults((results) => {
     statusEl.className = 'overlay-status';
   }
 
-  // ═════ State machine ═════
-  // 시퀀스: UP → DOWN → UP = 1 REP
-  // ready 상태일 땐 어느 쪽이든 먼저 감지되면 그쪽으로 진입
   if (phase === 'ready') {
     if (isUp) setPhase('up');
     else if (isDown) setPhase('down');
@@ -681,7 +664,6 @@ pose.onResults((results) => {
     }
   }
 
-  // 관절 그리기 (어깨·팔꿈치·손·배(엉덩이)·무릎)
   const drawPoint = (p, color, label) => {
     const x = p.x * canvasEl.width;
     const y = p.y * canvasEl.height;
@@ -699,7 +681,6 @@ pose.onResults((results) => {
   drawPoint(kn, kneeOnFloor ? '#00e676' : (kneeOffFloor ? '#00d4ff' : '#ff9d00'),
             kneeOnFloor ? '무릎 TOUCH' : (kneeOffFloor ? '무릎 OFF' : '무릎'));
 
-  // 바닥 라인 (손목 y 기준) 시각화
   const fy = floorY * canvasEl.height;
   ctx.strokeStyle = 'rgba(0,212,255,0.35)';
   ctx.setLineDash([6, 6]); ctx.lineWidth = 1.2;
@@ -710,8 +691,9 @@ pose.onResults((results) => {
 async function startCamera() {
   cameraStarted = true;
   try {
+    // 1번 왕복달리기와 동일 - 전면 카메라 우선
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { exact: 'environment' } }
+      video: { facingMode: 'user' }
     }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
     videoEl.srcObject = stream; videoEl.play();
     const camera = new Camera(videoEl, {
